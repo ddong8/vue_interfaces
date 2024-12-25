@@ -228,6 +228,7 @@ export default {
     };
   },
   created() {
+    this.smileInputDisable = false; // 初始时禁用按钮
     this.$nextTick(() => {
       setTimeout(() => {
         this.initKetcher();
@@ -241,14 +242,14 @@ export default {
   methods: {
     initKetcher() {
       let ketcherFrame = document.getElementById("idKetcher");
-      let ketcher = null;
-      if ("contentDocument" in ketcherFrame) {
-        ketcher = ketcherFrame.contentWindow.ketcher;
-      } else {
-        ketcher = document.frames["idKetcher"].window.ketcher;
-      }
-      console.log("let ketcher", ketcher);
-      this.ketcher = ketcher;
+    // 添加等待iframe加载完成的逻辑
+    if (!ketcherFrame.contentWindow || !ketcherFrame.contentWindow.ketcher) {
+      setTimeout(() => this.initKetcher(), 500);
+      return;
+    }
+    
+    this.ketcher = ketcherFrame.contentWindow.ketcher;
+    this.smileInputDisable = true;  // ketcher加载完成后启用按钮
     },
     gogo() {
       this.initEcharts();
@@ -257,8 +258,22 @@ export default {
       get_synthesis_steps();
     },
     async sendSmiles() {
-      let res = await this.recognizeMolecule(this.smiles);
-      this.imageUrl = res;
+    // 确保ketcher已初始化
+    if (!this.ketcher) {
+      await new Promise(resolve => {
+        const checkKetcher = () => {
+          if (this.ketcher) {
+            resolve();
+          } else {
+            setTimeout(checkKetcher, 100);
+          }
+        };
+        checkKetcher();
+      });
+    }
+    
+    let res = await this.recognizeMolecule(this.smiles);
+    this.imageUrl = res;
     },
     // 提交识别结果（SMILES）
     async recognizeMolecule(name) {
