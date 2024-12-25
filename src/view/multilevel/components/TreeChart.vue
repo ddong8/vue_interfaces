@@ -210,6 +210,7 @@ export default {
       all_score: {},
       molsPic: [],
       molsTitle: [],
+      status: "",
       options: [
         {
           value: "0",
